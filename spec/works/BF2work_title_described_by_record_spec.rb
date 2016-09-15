@@ -117,14 +117,15 @@ describe 'prefTitle of the work described by the MARC record' do
                       rdfs:label ?instTitleValue .
                   }") }
 
+  let(:graph) { self.send(MARC2BF_GRAPH_METHOD, marcxml_str, rec_id) }
 
   context "130" do
     # 1. If there is a 130 present:
     context "‡a (+ 245) only" do
       # 1a. The *only* subfield ($a or $k) == MainTitleElement instance (obl.: 1) of prefTitle of Work ;
-      let!(:g) {
-        rec_id = '130a_only'
-        marcxml_str = marc_ldr_001_008.sub('RECORD_ID', rec_id) +
+      let!(:rec_id) { '130a_only' }
+      let(:marcxml_str) do
+        marc_ldr_001_008.sub('RECORD_ID', rec_id) +
           '<datafield ind1="0" ind2=" " tag="130">
             <subfield code="a">Beowulf.</subfield>
           </datafield>
@@ -133,25 +134,32 @@ describe 'prefTitle of the work described by the MARC record' do
             <subfield code="c">IGNORE</subfield>
           </datafield>
         </record>'
-        self.send(MARC2BF_GRAPH_METHOD, marcxml_str, rec_id)
-      }
-      it 'single work' do
-        expect(g.query(WorkHelpers::WORK_SPARQL_QUERY).size).to eq 1
       end
-      it 'work title from 130' do
-        resps = g.query(mainElemTitle_of_work_sparql_query)
-        expect(resps.size).to eq 1
-        title_value = resps.first.mainElemValue.to_s
-        expect(title_value).to match(/Beowulf/)
-        expect(title_value).not_to match(/IGNORE/)
+
+      context "queried for works" do
+        subject { graph.query(WorkHelpers::WORK_SPARQL_QUERY) }
+        it 'return a single work' do
+          is_expected.to have(1).items
+        end
+      end
+      context "queried for titles" do
+        subject { graph.query(mainElemTitle_of_work_sparql_query) }
+        let(:title_value) { subject.first.mainElemValue.to_s }
+        it 'work title from 130' do
+          is_expected.to have(1).items
+        end
+        it 'work title from 130' do
+          expect(title_value).to match(/Beowulf/)
+          expect(title_value).not_to match(/IGNORE/)
+        end
       end
     end
 
     context "‡a, ‡l, ‡s, ‡f, ‡= (+ 245) only" do
       # 1a. The *first* subfield ($a or $k) == MainTitleElement instance (obl.: 1) of prefTitle of Work ;
-      let!(:g) {
-        rec_id = '130a_first'
-        marcxml_str = marc_ldr_001_008.sub('RECORD_ID', rec_id) +
+      let!(:rec_id) { '130a_first' }
+      let!(:marcxml_str) do
+        marc_ldr_001_008.sub('RECORD_ID', rec_id) +
           '<datafield ind1="0" ind2=" " tag="130">
             <subfield code="a">Beowulf</subfield>
             <subfield code="l">IGNORE</subfield>
@@ -165,25 +173,32 @@ describe 'prefTitle of the work described by the MARC record' do
             <subfield code="c">IGNORE</subfield>
            </datafield>
         </record>'
-        self.send(MARC2BF_GRAPH_METHOD, marcxml_str, rec_id)
-      }
-      it 'single work' do
-        expect(g.query(WorkHelpers::WORK_SPARQL_QUERY).size).to eq 1
       end
-      it 'work title from 130' do
-        resps = g.query(mainElemTitle_of_work_sparql_query)
-        expect(resps.size).to eq 1
-        title_value = resps.first.mainElemValue.to_s
-        expect(title_value).to match(/Beowulf/)
-        expect(title_value).not_to match(/IGNORE/)
+
+      context "queried for works" do
+        subject { graph.query(WorkHelpers::WORK_SPARQL_QUERY) }
+        it 'return a single work' do
+          is_expected.to have(1).items
+        end
+      end
+      context "queried for titles" do
+        subject { graph.query(mainElemTitle_of_work_sparql_query) }
+        let(:title_value) { subject.first.mainElemValue.to_s }
+        it do
+          is_expected.to have(1).items
+        end
+        it 'gets work title from 130' do
+          expect(title_value).to match(/Beowulf/)
+          expect(title_value).not_to match(/IGNORE/)
+        end
       end
     end
 
     context "‡l, ‡s, ‡f, ‡= (+ 245) only" do
       # 1b. The second (or other) subfield(s) == TitleElement instances (obl.: 0,n) of prefTitle of Work ;
-      let!(:g) {
-        rec_id = '130_lsfeq'
-        marcxml_str = marc_ldr_001_008.sub('RECORD_ID', rec_id) +
+      let!(:rec_id) { '130_lsfeq' }
+      let!(:marcxml_str) do
+        marc_ldr_001_008.sub('RECORD_ID', rec_id) +
         '<datafield ind1="0" ind2=" " tag="130">
           <subfield code="a">Beowulf</subfield>
           <subfield code="l">Danish &amp; Anglo-Saxon.</subfield>
@@ -197,25 +212,32 @@ describe 'prefTitle of the work described by the MARC record' do
           <subfield code="c">IGNORE</subfield>
          </datafield>
       </record>'
-        self.send(MARC2BF_GRAPH_METHOD, marcxml_str, rec_id)
-      }
-      it 'single work' do
-        expect(g.query(WorkHelpers::WORK_SPARQL_QUERY).size).to eq 1
       end
-      it 'work title from 130' do
-        resps = g.query(otherElemTitle_of_work_sparql_query)
-        expect(resps.size).to eq 5
-        # Need to fix following to loop through SPARQL query results.
-        title_value = resps.first.otherElemValue.to_s
-        expect(title_value).to match(/Danish|Schaldemose|1847|944917/)
-        expect(title_value).not_to match(/IGNORE|Beowulf/)
+
+      context "queried for works" do
+        subject { graph.query(WorkHelpers::WORK_SPARQL_QUERY) }
+        it 'return a single work' do
+          is_expected.to have(1).items
+        end
+      end
+      context "queried for titles" do
+        subject { graph.query(otherElemTitle_of_work_sparql_query) }
+        let(:title_value) { subject.first.otherElemValue.to_s }
+        it do
+          is_expected.to have(5).items
+        end
+        it 'gets work title from 130' do
+          expect(title_value).to match(/Danish|Schaldemose|1847|944917/)
+          expect(title_value).not_to match(/IGNORE|Beowulf/)
+        end
       end
     end
 
-    it 'capture 130 ind1 (non-filing chars) in nonSort' do
+    context 'has non-filing chars' do
       # 1c. The first indicator (when exists and != 0) == NonSortElement (obl.: 0,1) instance of prefTitle of Work ;
-      rec_id = '130_ind1'
-      marcxml_str = marc_ldr_001_008.sub('RECORD_ID', rec_id) +
+      let!(:rec_id) { '130_ind1' }
+      let!(:marcxml_str) do
+        marc_ldr_001_008.sub('RECORD_ID', rec_id) +
         '<datafield ind1="1" ind2=" " tag="130">
            <subfield code="a">Lid un tfile.</subfield>
          </datafield>
@@ -225,12 +247,19 @@ describe 'prefTitle of the work described by the MARC record' do
            <subfield code="c">IGNORE</subfield>
          </datafield>
       </record>'
-      g = self.send(MARC2BF_GRAPH_METHOD, marcxml_str, rec_id)
-      resps = g.query(nonSortValue_of_work_sparql_query)
-      expect(resps.size).to eq 1
-      title_value = resps.first.nonSortValue.to_s
-      expect(title_value).to match(/^L$/)
-      expect(title_value).not_to match(/IGNORE|un tfile/)
+      end
+
+      context "queried for titles" do
+        subject { graph.query(nonSortValue_of_work_sparql_query) }
+        let(:title_value) { subject.first.nonSortValue.to_s }
+        it do
+          is_expected.to have(1).items
+        end
+        it 'gets work title from 130' do
+          expect(title_value).to match(/^L$/)
+          expect(title_value).not_to match(/IGNORE|un tfile/)
+        end
+      end
     end
 
     #   1d. (to be improved) The first (or only) subfield ($a or $k) appears in the rdfs:label (obl: 1) of the prefTitle of the Work ;
